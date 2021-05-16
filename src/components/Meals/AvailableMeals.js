@@ -1,37 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./AvailableMeals.module.css";
 import Card from "../UI/Card";
 import MealItem from "./MealItem/MealItem";
-
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Sushi",
-    description: "Finest fish and veggies",
-    price: 22.99,
-  },
-  {
-    id: "m2",
-    name: "Schnitzel",
-    description: "A german specialty!",
-    price: 16.5,
-  },
-  {
-    id: "m3",
-    name: "Barbecue Burger",
-    description: "American, raw, meaty",
-    price: 12.99,
-  },
-  {
-    id: "m4",
-    name: "Green Bowl",
-    description: "Healthy...and green...",
-    price: 18.99,
-  },
-];
+import classes from "./AvailableMeals.module.css";
 
 const AvailableMeals = () => {
-  const mealsList = DUMMY_MEALS.map((meal) => {
+  const [meals, setMeals] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorState, setErrorState] = useState();
+
+  const fetchMealData = async () => {
+    const result = await fetch(
+      "https://react-movie-http-26180-default-rtdb.firebaseio.com/meals.json"
+    );
+
+    if (!result.ok) {
+      throw new Error("Something went wrong!");
+    }
+    const data = await result.json();
+
+    const loadedMeals = [];
+    for (let meal in data) {
+      loadedMeals.push({ id: meal, ...data[meal] });
+    }
+
+    setMeals(loadedMeals);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchMealData().catch((error) => {
+      setIsLoading(false);
+      setErrorState(error.message);
+    });
+  }, []);
+
+  const mealsList = meals.map((meal) => {
     return (
       <MealItem
         id={meal.id}
@@ -44,6 +48,22 @@ const AvailableMeals = () => {
       </MealItem>
     );
   });
+
+  if (isLoading) {
+    return (
+      <section className={classes.MealsLoading}>
+        <p>Loading...</p>
+      </section>
+    );
+  }
+
+  if (errorState) {
+    return (
+      <section className={classes.MealsError}>
+        <p>{errorState}</p>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.meals}>
